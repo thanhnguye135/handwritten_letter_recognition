@@ -23,7 +23,8 @@ class DeviceDataLoader:
     def __len__(self):
         return len(self.dl)
 
-def accuracy(outputs, labels):
-    """Compute accuracy."""
-    _, preds = torch.max(outputs, dim=1)
-    return torch.sum(preds == labels).item() / len(preds)
+def accuracy(out, labels):
+    _, preds = torch.max(out, dim=1)  # Get the index of the max log-probability
+    correct = (preds == labels).float()  # Check correct predictions
+    acc = correct.sum() / len(correct)  # Average accuracy
+    return acc

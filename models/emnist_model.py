@@ -1,5 +1,14 @@
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
+# Accuracy function
+def accuracy(outputs, labels):
+    _, preds = torch.max(outputs, dim=1)
+    return torch.tensor(torch.sum(preds == labels).item() / len(preds))
+
+
+# EMNIST Model
 class EmnistModel(nn.Module):
     def __init__(self):
         super().__init__()
@@ -43,7 +52,7 @@ class EmnistModel(nn.Module):
             nn.ReLU(),
             nn.Linear(1024, 256),
             nn.ReLU(),
-            nn.Linear(256, 26)
+            nn.Linear(256, 26)  # 26 classes (A-Z)
         )
 
     def forward(self, xb):
@@ -55,3 +64,28 @@ class EmnistModel(nn.Module):
         out = self.res2(out) + out
         out = self.classifier(out)
         return out
+
+    def training_step(self, batch):
+        images, labels = batch
+        labels = labels - 1  # Adjust labels from [1-26] to [0-25] for compatibility
+        out = self(images)
+        loss = F.cross_entropy(out, labels)
+        return loss
+
+    def validation_step(self, batch):
+        images, labels = batch
+        labels = labels - 1  # Adjust labels
+        out = self(images)
+        loss = F.cross_entropy(out, labels)
+        acc = accuracy(out, labels)
+        return {'val_loss': loss, 'val_acc': acc}
+
+    def validation_epoch_end(self, outputs):
+        batch_losses = [x['val_loss'] for x in outputs]
+        val_loss = torch.stack(batch_losses).mean()
+        val_acc = torch.stack([torch.tensor(x['val_acc']) for x in outputs]).mean()
+        return {'val_loss': val_loss.item(), 'val_acc': val_acc.item()}
+
+    def epoch_end(self, epoch, result):
+        print(f"Epoch [{epoch+1}], Train Loss: {result['train_loss']:.4f}, "
+              f"Val Loss: {result['val_loss']:.4f}, Val Accuracy: {result['val_acc']:.4f}")
