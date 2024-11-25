@@ -1,0 +1,34 @@
+# Python Bytecode Files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# PyTorch Model Files
+*.pth
+*.pt
+
+# Dataset files (EMNIST and other datasets)
+data/raw/
+data/processed/
+data/test_images/
+
+# IDE Files (e.g., VSCode, PyCharm, etc.)
+.vscode/
+.idea/
+
+# Log Files
+*.log
+
+# System Files
+.DS_Store
+Thumbs.db
