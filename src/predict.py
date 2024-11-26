@@ -1,7 +1,7 @@
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
-from models.emnist_model import EmnistModel  # Import your model architecture
+from models.emnist_model import EmnistModel  # Ensure this path matches your project structure
 
 def preprocess_image(img):
     """
@@ -26,15 +26,15 @@ def load_model(model_path):
     model.eval()  # Set to evaluation mode
     return model
 
-def predict_image(img, model):
+def predict_image(img_tensor, model):
     """
     Predict the class of the input image using the specified model.
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    img = img.to(device)  # Move image to the same device as the model
+    img_tensor = img_tensor.to(device)  # Move image to the same device as the model
 
     # Perform inference
     with torch.no_grad():
-        outputs = model(img)  # Forward pass
-        _, predicted = torch.max(outputs, 1)  # Get class index with highest score
+        outputs = model(img_tensor)  # Forward pass
+        _, predicted = torch.max(outputs, dim=1)  # Get class index with highest score
     return predicted.item()  # Return predicted class index

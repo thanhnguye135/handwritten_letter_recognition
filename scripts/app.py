@@ -1,7 +1,6 @@
 import os
 from PIL import Image
 import matplotlib.pyplot as plt
-
 from src.predict import preprocess_image, load_model, predict_image
 
 # Define paths
@@ -34,7 +33,7 @@ def main():
     # Predict the class
     try:
         predicted_label = predict_image(img_tensor, model)
-        predicted_character = chr(predicted_label + 96)  # Convert to alphabet
+        predicted_character = chr(predicted_label + 96)  # Convert to alphabet (1=a, 2=b, ...)
         print(f"Predicted Label: {predicted_label}, Predicted Character: {predicted_character}")
     except Exception as e:
         print(f"An error occurred during prediction: {e}")

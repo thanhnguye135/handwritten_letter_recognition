@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from src.utils import to_device
 
 # Accuracy function
 def accuracy(outputs, labels):
@@ -12,88 +13,68 @@ def accuracy(outputs, labels):
 class EmnistModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, padding=1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True)
-        )
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2)  # Output size reduced by half
-        )
-        self.res1 = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True)
-        )
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True)
-        )
-        self.conv4 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2)  # Output size reduced by half
-        )
-        self.res2 = nn.Sequential(
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True)
-        )
-        self.classifier = nn.Sequential(
-            nn.Flatten(),  # Flatten the output
-            nn.Linear(256 * 7 * 7, 1024),  # Input dimension based on convolutional output
-            nn.ReLU(),
-            nn.Linear(1024, 256),
-            nn.ReLU(),
-            nn.Linear(256, 26)  # Output: 26 classes (A-Z)
+        self.conv1 = nn.Sequential(nn.Conv2d(1, 32, kernel_size=3, padding=1), 
+                                  nn.BatchNorm2d(32),
+                                  nn.ReLU(inplace=True)) #32*28*28
+        self.conv2 = nn.Sequential(nn.Conv2d(32, 64, kernel_size=3, padding=1), 
+                                  nn.BatchNorm2d(64),
+                                  nn.ReLU(inplace=True),
+                                  nn.MaxPool2d(2)) #64*14*14
+        self.res1 = nn.Sequential(nn.Conv2d(64, 64, kernel_size=3, padding=1),
+                                  nn.ReLU(inplace=True),
+                                  nn.Conv2d(64, 64, kernel_size=3, padding=1),
+                                  nn.ReLU(inplace=True)) #64*14*14
+        self.conv3 = nn.Sequential(nn.Conv2d(64, 128, kernel_size=3, padding=1),
+                                  nn.BatchNorm2d(128),  
+                                  nn.ReLU(inplace=True)) #128*14*14
+        self.conv4 = nn.Sequential(nn.Conv2d(128, 256, kernel_size=3, padding=1),
+                                  nn.BatchNorm2d(256), 
+                                  nn.ReLU(inplace=True),
+                                  nn.MaxPool2d(2)) #256*7*7
+        self.res2 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=3, padding=1), 
+                                  nn.ReLU(inplace=True),
+                                  nn.Conv2d(256, 256, kernel_size=3, padding=1),
+                                  nn.ReLU(inplace=True)) #256*7*7
+        self.classifier = nn.Sequential(nn.Flatten(),
+                          nn.Linear(256*7*7, 1024),
+                          nn.ReLU(),
+                          nn.Linear(1024, 256),
+                          nn.ReLU(),
+                          nn.Linear(256, 26)
         )
 
     def forward(self, xb):
-        # Debugging shapes through the forward pass
         out = self.conv1(xb)
-        print(f"After conv1: {out.shape}")
         out = self.conv2(out)
-        print(f"After conv2: {out.shape}")
         out = self.res1(out) + out
-        print(f"After res1: {out.shape}")
         out = self.conv3(out)
-        print(f"After conv3: {out.shape}")
         out = self.conv4(out)
-        print(f"After conv4: {out.shape}")
         out = self.res2(out) + out
-        print(f"After res2: {out.shape}")
         out = self.classifier(out)
-        print(f"After classifier: {out.shape}")
         return out
-
+    
     def training_step(self, batch):
-        images, labels = batch
-        labels = labels - 1  # Adjust labels from [1-26] to [0-25] for compatibility
-        out = self(images)
-        loss = F.cross_entropy(out, labels)
+        images, label = batch
+        labels = to_device(torch.tensor([x-1 for x in label]), device)
+        out = self(images)                  # Generate predictions
+        loss = F.cross_entropy(out, labels) # Calculate loss
         return loss
-
-    def validation_step(self, batch):
-        images, labels = batch
-        labels = labels - 1  # Adjust labels
-        out = self(images)
-        loss = F.cross_entropy(out, labels)
-        acc = accuracy(out, labels)
+    
+    def validation_step(self, batch, device):
+        images, label = batch
+        labels = to_device(torch.tensor([x-1 for x in label]), device)
+        out = self(images)                    # Generate predictions
+        loss = F.cross_entropy(out, labels)   # Calculate loss
+        acc = accuracy(out, labels)           # Calculate accuracy
         return {'val_loss': loss, 'val_acc': acc}
-
+        
     def validation_epoch_end(self, outputs):
         batch_losses = [x['val_loss'] for x in outputs]
-        val_loss = torch.stack(batch_losses).mean()
-        val_acc = torch.stack([torch.tensor(x['val_acc']) for x in outputs]).mean()
-        return {'val_loss': val_loss.item(), 'val_acc': val_acc.item()}
-
+        epoch_loss = torch.stack(batch_losses).mean()   # Combine losses
+        batch_accs = [x['val_acc'] for x in outputs]
+        epoch_acc = torch.stack(batch_accs).mean()      # Combine accuracies
+        return {'val_loss': epoch_loss.item(), 'val_acc': epoch_acc.item()}
+    
     def epoch_end(self, epoch, result):
-        print(f"Epoch [{epoch+1}], Train Loss: {result['train_loss']:.4f}, "
-              f"Val Loss: {result['val_loss']:.4f}, Val Accuracy: {result['val_acc']:.4f}")
+        print("Epoch [{}], val_loss: {:.4f}, train_loss: {:.4f}, val_acc: {:.4f}".format(epoch, result['val_loss'], result['train_loss'], result['val_acc']))
+     
