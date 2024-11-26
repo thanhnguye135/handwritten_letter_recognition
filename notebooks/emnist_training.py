@@ -201,6 +201,9 @@ print('Label:', label-1)
 
 print(img.unsqueeze(0).shape)
 
+# Define classes for the EMNIST 'letters' dataset
+classes = dataset.classes
+
 def predict_image(img, model):
     xb = to_device(img.unsqueeze(0), device)
     yb = model(xb)
@@ -216,8 +219,8 @@ plt.imshow(img[0], cmap='gray')
 print('Label:', label, ', Predicted Label:', predict_image(img, model) + 1, ', Predicted Alphabet:', classes[predict_image(img, model)])
 
 test_loader = DeviceDataLoader(DataLoader(test_dataset, batch_size=128), device)
-result = evaluate(model, test_loader)
-result
+result = evaluate(model, test_loader, device)
+print(result)
 
 # 8. Save the trained model
 model_save_path = 'models/emnist_model.pth'
