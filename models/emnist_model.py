@@ -21,7 +21,7 @@ class EmnistModel(nn.Module):
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(2)
+            nn.MaxPool2d(2)  # Output size reduced by half
         )
         self.res1 = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=3, padding=1),
@@ -38,7 +38,7 @@ class EmnistModel(nn.Module):
             nn.Conv2d(128, 256, kernel_size=3, padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(2)
+            nn.MaxPool2d(2)  # Output size reduced by half
         )
         self.res2 = nn.Sequential(
             nn.Conv2d(256, 256, kernel_size=3, padding=1),
@@ -47,22 +47,30 @@ class EmnistModel(nn.Module):
             nn.ReLU(inplace=True)
         )
         self.classifier = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(256 * 7 * 7, 1024),
+            nn.Flatten(),  # Flatten the output
+            nn.Linear(256 * 7 * 7, 1024),  # Input dimension based on convolutional output
             nn.ReLU(),
             nn.Linear(1024, 256),
             nn.ReLU(),
-            nn.Linear(256, 26)  # 26 classes (A-Z)
+            nn.Linear(256, 26)  # Output: 26 classes (A-Z)
         )
 
     def forward(self, xb):
+        # Debugging shapes through the forward pass
         out = self.conv1(xb)
+        print(f"After conv1: {out.shape}")
         out = self.conv2(out)
+        print(f"After conv2: {out.shape}")
         out = self.res1(out) + out
+        print(f"After res1: {out.shape}")
         out = self.conv3(out)
+        print(f"After conv3: {out.shape}")
         out = self.conv4(out)
+        print(f"After conv4: {out.shape}")
         out = self.res2(out) + out
+        print(f"After res2: {out.shape}")
         out = self.classifier(out)
+        print(f"After classifier: {out.shape}")
         return out
 
     def training_step(self, batch):

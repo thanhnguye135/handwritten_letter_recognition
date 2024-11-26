@@ -39,12 +39,14 @@ logger.info(f"Using device: {device}")
 # 1. Load and preprocess the dataset
 logger.info("Loading and preprocessing dataset...")
 transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5], std=[0.5])  # Normalize to [-1, 1] range
+    transforms.Grayscale(num_output_channels=1),  # Ensure 1 channel (grayscale)
+    transforms.Resize((28, 28)),                 # Match model's expected input size
+    transforms.ToTensor(),                       # Convert to PyTorch tensor
+    transforms.Normalize((0.5,), (0.5,))         # Normalize as per training
 ])
 
-dataset = EMNIST(root='data/raw', split='letters', train=True, download=False, transform=transform)
-test_dataset = EMNIST(root='data/raw', split='letters', train=False, download=False, transform=transform)
+dataset = EMNIST(root='data/raw', split='letters', train=True, download=True, transform=transform)
+test_dataset = EMNIST(root='data/raw', split='letters', train=False, download=True, transform=transform)
 
 val_percent = 0.1
 val_size = int(len(dataset) * val_percent)
