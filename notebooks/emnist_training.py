@@ -109,7 +109,7 @@ def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
 
-def fit_one_cycle(epochs, max_lr, model, train_loader, val_loader, 
+def fit_one_cycle(epochs, max_lr, model, train_loader, val_loader, device, 
                   weight_decay=0, grad_clip=None, opt_func=torch.optim.SGD):
     torch.cuda.empty_cache()
     history = []
@@ -126,7 +126,7 @@ def fit_one_cycle(epochs, max_lr, model, train_loader, val_loader,
         train_losses = []
         lrs = []
         for batch in train_loader:
-            loss = model.training_step(batch)
+            loss = model.training_step(batch, device)
             train_losses.append(loss)
             loss.backward()
             
@@ -159,7 +159,7 @@ max_lr = 0.05
 grad_clip = 0.5
 weight_decay = 1e-3
 
-history += fit_one_cycle(epochs, max_lr, model, train_load, val_load, 
+history += fit_one_cycle(epochs, max_lr, model, train_load, val_load, device,
                              grad_clip=grad_clip, 
                              weight_decay=weight_decay)
 

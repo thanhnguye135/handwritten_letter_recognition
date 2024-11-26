@@ -53,7 +53,7 @@ class EmnistModel(nn.Module):
         out = self.classifier(out)
         return out
     
-    def training_step(self, batch):
+    def training_step(self, batch, device):
         images, label = batch
         labels = to_device(torch.tensor([x-1 for x in label]), device)
         out = self(images)                  # Generate predictions
